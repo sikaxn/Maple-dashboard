@@ -56,6 +56,13 @@ ds_smalltext_flash_entry = telemetry_table.getBooleanTopic("DS_smalltext_flash")
 # Subscribe to FMSControlData
 fms_control_data_entry = fms_info_table.getIntegerTopic("FMSControlData").subscribe(0)
 
+# Subscribe to terminal text data
+ds_terminal_text_entry = telemetry_table.getStringTopic("DS_terminal_text").subscribe("")
+ds_terminal_text_r_entry = telemetry_table.getIntegerTopic("DS_terminal_text_R").subscribe(255)
+ds_terminal_text_g_entry = telemetry_table.getIntegerTopic("DS_terminal_text_G").subscribe(255)
+ds_terminal_text_b_entry = telemetry_table.getIntegerTopic("DS_terminal_text_B").subscribe(255)
+ds_terminal_force_entry = telemetry_table.getBooleanTopic("DS_terminal_force").subscribe(False)
+
 # Subscribe to chime boolean variables
 ds_chime_1_entry = telemetry_table.getBooleanTopic("DS_chime_1").subscribe(False)
 ds_chime_2_entry = telemetry_table.getBooleanTopic("DS_chime_2").subscribe(False)
@@ -66,6 +73,20 @@ edge_width = 50
 
 # Flash intervals
 flash_interval = 0.25  # Seconds
+
+# Terminal settings
+terminal_lines = []  # List to store terminal lines (with color)
+terminal_max_lines = 10  # Max number of lines visible in the terminal
+last_terminal_text = ""  # Track last text to detect changes
+terminal_force_triggered = False  # Latch for force print
+
+# Function to clamp RGB values between 0 and 255
+def clamp_rgb_value(value):
+    return max(0, min(value, 255))
+
+# Function to invert RGB color values
+def invert_color(r, g, b):
+    return (255 - r, 255 - g, 255 - b)
 
 # FMSControlData color mappings and FMS attached logic
 def get_fms_edge_color(fms_control_data):
@@ -95,10 +116,6 @@ def draw_text(screen, text, font, color, center_position, flash, elapsed_time):
         text_rect = text_surface.get_rect(center=center_position)
         screen.blit(text_surface, text_rect)
 
-# Function to invert the color
-def invert_color(r, g, b):
-    return (255 - r, 255 - g, 255 - b)
-
 # Function to dynamically adjust font size based on text length and available space
 def get_dynamic_font(text, max_width, max_height, base_font_size):
     font_size = base_font_size
@@ -114,6 +131,12 @@ def get_dynamic_font(text, max_width, max_height, base_font_size):
         text_width, text_height = text_surface.get_size()
 
     return font
+
+# Function to handle terminal printing
+def print_terminal(screen, font, terminal_lines, position, max_lines):
+    for i, (line, color) in enumerate(terminal_lines[:max_lines]):
+        text_surface = font.render(line, True, color)
+        screen.blit(text_surface, (position[0], position[1] + i * 20))
 
 # Latch state for chime playback
 chime1_played = False
@@ -132,10 +155,10 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # Get canvas color from NetworkTables
-    ds_r = ds_r_entry.get()
-    ds_g = ds_g_entry.get()
-    ds_b = ds_b_entry.get()
+    # Get canvas color from NetworkTables and clamp RGB values
+    ds_r = clamp_rgb_value(ds_r_entry.get())
+    ds_g = clamp_rgb_value(ds_g_entry.get())
+    ds_b = clamp_rgb_value(ds_b_entry.get())
     canvas_color = (ds_r, ds_g, ds_b)
     text_color = invert_color(ds_r, ds_g, ds_b)
 
@@ -152,6 +175,23 @@ while running:
     # Get flash data
     largetext_flash = ds_largetext_flash_entry.get()
     smalltext_flash = ds_smalltext_flash_entry.get()
+
+    # Get terminal text data and clamp the RGB values
+    terminal_text = ds_terminal_text_entry.get()
+    terminal_text_r = clamp_rgb_value(ds_terminal_text_r_entry.get())
+    terminal_text_g = clamp_rgb_value(ds_terminal_text_g_entry.get())
+    terminal_text_b = clamp_rgb_value(ds_terminal_text_b_entry.get())
+    terminal_force = ds_terminal_force_entry.get()
+
+    # Handle terminal text updates
+    if terminal_text != last_terminal_text or (terminal_force and not terminal_force_triggered):
+        terminal_color = (terminal_text_r, terminal_text_g, terminal_text_b)  # Color only affects new lines
+        terminal_lines.insert(0, (terminal_text, terminal_color))  # Insert new text and color at the top
+        terminal_lines = terminal_lines[:terminal_max_lines]  # Keep only max lines
+        last_terminal_text = terminal_text
+        terminal_force_triggered = True if terminal_force else False
+    elif not terminal_force:
+        terminal_force_triggered = False  # Reset latch
 
     # Get chime states
     chime1_trigger = ds_chime_1_entry.get()
@@ -199,11 +239,15 @@ while running:
     # Render small text just below the large text
     draw_text(screen, ds_smalltext, small_font, text_color, (screen_width // 2, screen_height // 2 + 50), smalltext_flash, elapsed_time)
 
-    # Draw the colored edge based on FMSControlData
+    # Draw the colored edge based on FMSControlData (top, bottom, left, right edges)
     pygame.draw.rect(screen, edge_color, (0, 0, screen_width, edge_width))  # Top edge
     pygame.draw.rect(screen, edge_color, (0, screen_height - edge_width, screen_width, edge_width))  # Bottom edge
     pygame.draw.rect(screen, edge_color, (0, 0, edge_width, screen_height))  # Left edge
     pygame.draw.rect(screen, edge_color, (screen_width - edge_width, 0, edge_width, screen_height))  # Right edge
+
+    # Print terminal-like text in the bottom-left (inside the canvas, avoiding the edge)
+    terminal_font = pygame.font.Font(None, 24)
+    print_terminal(screen, terminal_font, terminal_lines, (10 + edge_width, screen_height - edge_width - terminal_max_lines * 20 - 10), terminal_max_lines)
 
     # If FMS is attached, display "FMS Connected" on the bottom edge
     if fms_attached:
