@@ -1,6 +1,6 @@
 # A Pygame based dashboard for FRC.
 
-![screen shot](Capture.png)
+![screen shot](Capture.PNG)
 # Getting started
 
  
