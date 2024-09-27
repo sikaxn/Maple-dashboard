@@ -91,3 +91,37 @@ The dashboard interacts with various elements using `NetworkTables`. Here’s a 
 -   **Table**: `telemetry`
 -   **Description**: Displays the current battery voltage on the screen. This is useful for monitoring the robot’s power levels during operation.
 -   **Effect**: The battery voltage is rendered at the top right of the screen, showing real-time voltage readings.
+
+### NetworkTables Summary for Terminal Feature
+
+![](terminal.PNG)
+
+The **terminal feature** is implemented to display a terminal-like text area in the bottom-left corner of the dashboard. New lines of text are added dynamically, with the option to set custom text colors. The text is printed in a top-to-bottom fashion, and the number of visible lines is limited.
+
+Here’s a summary of how the terminal feature is controlled via NetworkTables:
+
+1. **Data Entries:**
+   - **`DS_terminal_text` (string)**: 
+     - The string that contains the new line of text to be printed in the terminal.
+     - If this value changes, the new text will be printed at the top of the terminal area.
+
+   - **`DS_terminal_text_R`, `DS_terminal_text_G`, `DS_terminal_text_B` (int)**:
+     - These entries control the RGB color values of the newly printed line of text.
+     - The values are clamped between `0` and `255` to ensure valid RGB values.
+     - Older lines retain the colors they were printed with when initially displayed.
+
+   - **`DS_terminal_force` (bool)**:
+     - This entry is used to force printing the current `DS_terminal_text`, even if it hasn’t changed since the last print.
+     - This acts as a button with latching behavior. When set to `True`, the terminal prints the current text regardless of whether it has changed, and the latch ensures it triggers only once per activation.
+     - Once `DS_terminal_force` is reset to `False`, it can be triggered again for subsequent forced prints.
+
+2. **Behavior**:
+   - **Normal Text Printing**: The text from `DS_terminal_text` is printed whenever it changes. The most recent line is added to the top of the terminal, and older lines are pushed down.
+   - **Forced Printing**: If `DS_terminal_force` is set to `True`, the current text is printed even if it hasn’t changed, allowing the same text to be printed multiple times upon request.
+   - **Text Color**: Each new line of text uses the color specified by `DS_terminal_text_R`, `DS_terminal_text_G`, and `DS_terminal_text_B`. The colors for each line are retained even as new lines are added.
+
+3. **Display Area**:
+   - The terminal text is displayed in the bottom-left corner of the canvas, within the available screen space and avoiding the edge reserved for the `FMSInfo` data.
+   - The number of lines displayed is limited to a pre-set maximum (`terminal_max_lines`), and old lines scroll off the screen as new lines are added.
+
+This allows for dynamic terminal-style text display with customizable color and forced printing features, making it flexible for various dashboard use cases.
