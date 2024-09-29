@@ -4,6 +4,7 @@ from ntcore import NetworkTableInstance
 import sys
 import pygame.mixer
 import os
+import math
 
 # Initialize Pygame and Pygame mixer for sound
 pygame.init()
@@ -53,6 +54,9 @@ ds_smalltext_entry = telemetry_table.getStringTopic("DS_smalltext").subscribe(""
 ds_largetext_flash_entry = telemetry_table.getBooleanTopic("DS_largetext_flash").subscribe(False)
 ds_smalltext_flash_entry = telemetry_table.getBooleanTopic("DS_smalltext_flash").subscribe(False)
 
+# Subscribe to DS_toptext
+ds_toptext_entry = telemetry_table.getStringTopic("DS_toptext").subscribe("")
+
 # Subscribe to FMSControlData
 fms_control_data_entry = fms_info_table.getIntegerTopic("FMSControlData").subscribe(0)
 
@@ -87,6 +91,10 @@ def clamp_rgb_value(value):
 # Function to invert RGB color values
 def invert_color(r, g, b):
     return (255 - r, 255 - g, 255 - b)
+
+# Function to calculate Euclidean distance between two colors
+def color_distance(color1, color2):
+    return math.sqrt(sum((a - b) ** 2 for a, b in zip(color1, color2)))
 
 # FMSControlData color mappings and FMS attached logic
 def get_fms_edge_color(fms_control_data):
@@ -132,11 +140,20 @@ def get_dynamic_font(text, max_width, max_height, base_font_size):
 
     return font
 
-# Function to handle terminal printing
-def print_terminal(screen, font, terminal_lines, position, max_lines):
+# Function to handle terminal printing with background box if color is too close
+def print_terminal(screen, font, terminal_lines, canvas_color, position, max_lines, color_threshold=100):
     for i, (line, color) in enumerate(terminal_lines[:max_lines]):
         text_surface = font.render(line, True, color)
-        screen.blit(text_surface, (position[0], position[1] + i * 20))
+        text_rect = text_surface.get_rect(topleft=(position[0], position[1] + i * 20))
+        
+        # Check if text color is too close to canvas color
+        if color_distance(color, canvas_color) < color_threshold:
+            # Draw a background box with the inverted color of the text
+            box_color = invert_color(*color)
+            pygame.draw.rect(screen, box_color, text_rect.inflate(10, 10))
+        
+        # Draw the text on top
+        screen.blit(text_surface, text_rect)
 
 # Latch state for chime playback
 chime1_played = False
@@ -245,9 +262,15 @@ while running:
     pygame.draw.rect(screen, edge_color, (0, 0, edge_width, screen_height))  # Left edge
     pygame.draw.rect(screen, edge_color, (screen_width - edge_width, 0, edge_width, screen_height))  # Right edge
 
+    # Render the DS_toptext on the top edge
+    ds_toptext = ds_toptext_entry.get()
+    top_edge_font = get_dynamic_font(ds_toptext, screen_width - 2 * edge_width, edge_width, edge_width)
+    top_text_color = invert_color(*edge_color)
+    draw_text(screen, ds_toptext, top_edge_font, top_text_color, (screen_width // 2, edge_width // 2), False, elapsed_time)
+
     # Print terminal-like text in the bottom-left (inside the canvas, avoiding the edge)
     terminal_font = pygame.font.Font(None, 24)
-    print_terminal(screen, terminal_font, terminal_lines, (10 + edge_width, screen_height - edge_width - terminal_max_lines * 20 - 10), terminal_max_lines)
+    print_terminal(screen, terminal_font, terminal_lines, canvas_color, (10 + edge_width, screen_height - edge_width - terminal_max_lines * 20 - 10), terminal_max_lines)
 
     # If FMS is attached, display "FMS Connected" on the bottom edge
     if fms_attached:
