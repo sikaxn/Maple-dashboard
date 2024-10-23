@@ -34,18 +34,17 @@ screen_height = display_info.current_h // 2
 
 # Set up the window
 screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("FRC Dashboard")
+pygame.display.set_caption("Pygame FRC Dashboard")  # Updated window title
 
 # Set up NetworkTables using the publish-subscribe model
 ntinst = NetworkTableInstance.getDefault()
-ntinst.setServer("127.0.0.1")  # Set the server to the local robot's IP (127.0.0.1)
-ntinst.startClient4("FRC_Dashboard")  # Start client with a specific identity
+ntinst.setServer("127.0.0.1")  # Initial server IP
+ntinst.startClient4("Pygame_Dashboard")  # Updated client name
 
 # Get the telemetry table
 telemetry_table = ntinst.getTable("telemetry")
 fms_info_table = ntinst.getTable("FMSInfo")  # For FMSControlData
-
-# Subscribe to telemetry data
+# Subscribe telemetry data
 ds_r_entry = telemetry_table.getIntegerTopic("DS_R").subscribe(0)
 ds_g_entry = telemetry_table.getIntegerTopic("DS_G").subscribe(0)
 ds_b_entry = telemetry_table.getIntegerTopic("DS_B").subscribe(0)
@@ -53,24 +52,83 @@ ds_largetext_entry = telemetry_table.getStringTopic("DS_largetext").subscribe(""
 ds_smalltext_entry = telemetry_table.getStringTopic("DS_smalltext").subscribe("")
 ds_largetext_flash_entry = telemetry_table.getBooleanTopic("DS_largetext_flash").subscribe(False)
 ds_smalltext_flash_entry = telemetry_table.getBooleanTopic("DS_smalltext_flash").subscribe(False)
-
-# Subscribe to DS_toptext
-ds_toptext_entry = telemetry_table.getStringTopic("DS_toptext").subscribe("")
-
-# Subscribe to FMSControlData
-fms_control_data_entry = fms_info_table.getIntegerTopic("FMSControlData").subscribe(0)
-
-# Subscribe to terminal text data
 ds_terminal_text_entry = telemetry_table.getStringTopic("DS_terminal_text").subscribe("")
+ds_toptext_entry = telemetry_table.getStringTopic("DS_toptext").subscribe("")
+fms_control_data_entry = fms_info_table.getIntegerTopic("FMSControlData").subscribe(0)
 ds_terminal_text_r_entry = telemetry_table.getIntegerTopic("DS_terminal_text_R").subscribe(255)
 ds_terminal_text_g_entry = telemetry_table.getIntegerTopic("DS_terminal_text_G").subscribe(255)
 ds_terminal_text_b_entry = telemetry_table.getIntegerTopic("DS_terminal_text_B").subscribe(255)
 ds_terminal_force_entry = telemetry_table.getBooleanTopic("DS_terminal_force").subscribe(False)
-
-# Subscribe to chime boolean variables
 ds_chime_1_entry = telemetry_table.getBooleanTopic("DS_chime_1").subscribe(False)
 ds_chime_2_entry = telemetry_table.getBooleanTopic("DS_chime_2").subscribe(False)
 ds_chime_3_entry = telemetry_table.getBooleanTopic("DS_chime_3").subscribe(False)
+
+# Read the current values
+current_values = {
+    "ds_r": ds_r_entry.get(),
+    "ds_g": ds_g_entry.get(),
+    "ds_b": ds_b_entry.get(),
+    "ds_largetext": ds_largetext_entry.get(),
+    "ds_smalltext": ds_smalltext_entry.get(),
+    "ds_largetext_flash": ds_largetext_flash_entry.get(),
+    "ds_smalltext_flash": ds_smalltext_flash_entry.get(),
+    "ds_terminal_text": ds_terminal_text_entry.get(),
+    "ds_toptext": ds_toptext_entry.get(),
+    "fms_control_data": fms_control_data_entry.get(),
+    "ds_terminal_text_r": ds_terminal_text_r_entry.get(),
+    "ds_terminal_text_g": ds_terminal_text_g_entry.get(),
+    "ds_terminal_text_b": ds_terminal_text_b_entry.get(),
+    "ds_terminal_force": ds_terminal_force_entry.get(),
+    "ds_chime_1": ds_chime_1_entry.get(),
+    "ds_chime_2": ds_chime_2_entry.get(),
+    "ds_chime_3": ds_chime_3_entry.get()
+}
+
+# Publish telemetry data
+ds_r_entry_publisher = telemetry_table.getIntegerTopic("DS_R").publish()
+ds_g_entry_publisher = telemetry_table.getIntegerTopic("DS_G").publish()
+ds_b_entry_publisher = telemetry_table.getIntegerTopic("DS_B").publish()
+ds_largetext_entry_publisher = telemetry_table.getStringTopic("DS_largetext").publish()
+ds_smalltext_entry_publisher = telemetry_table.getStringTopic("DS_smalltext").publish()
+ds_largetext_flash_entry_publisher = telemetry_table.getBooleanTopic("DS_largetext_flash").publish()
+ds_smalltext_flash_entry_publisher = telemetry_table.getBooleanTopic("DS_smalltext_flash").publish()
+ds_terminal_text_entry_publisher = telemetry_table.getStringTopic("DS_terminal_text").publish()
+ds_toptext_entry_publisher = telemetry_table.getStringTopic("DS_toptext").publish()
+fms_control_data_entry_publisher = fms_info_table.getIntegerTopic("FMSControlData").publish()
+ds_terminal_text_r_entry_publisher = telemetry_table.getIntegerTopic("DS_terminal_text_R").publish()
+ds_terminal_text_g_entry_publisher = telemetry_table.getIntegerTopic("DS_terminal_text_G").publish()
+ds_terminal_text_b_entry_publisher = telemetry_table.getIntegerTopic("DS_terminal_text_B").publish()
+ds_terminal_force_entry_publisher = telemetry_table.getBooleanTopic("DS_terminal_force").publish()
+ds_chime_1_entry_publisher = telemetry_table.getBooleanTopic("DS_chime_1").publish()
+ds_chime_2_entry_publisher = telemetry_table.getBooleanTopic("DS_chime_2").publish()
+ds_chime_3_entry_publisher = telemetry_table.getBooleanTopic("DS_chime_3").publish()
+
+# Set default values if current values do not match (to prevent overwriting preexisting values)
+initial_values = {
+    "ds_r": 255,
+    "ds_g": 255,
+    "ds_b": 255,
+    "ds_largetext": "Welcome to pygame Dashboard",
+    "ds_smalltext": "This is the default status.",
+    "ds_largetext_flash": False,
+    "ds_smalltext_flash": False,
+    "ds_terminal_text": "",
+    "ds_toptext": "",
+    "fms_control_data": 0,
+    "ds_terminal_text_r": 0,
+    "ds_terminal_text_g": 0,
+    "ds_terminal_text_b": 0,
+    "ds_terminal_force": False,
+    "ds_chime_1": False,
+    "ds_chime_2": False,
+    "ds_chime_3": False
+}
+
+for key, value in current_values.items():
+    if value == initial_values[key]:
+        globals()[f"{key}_entry_publisher"].set(initial_values[key])
+    else:
+        globals()[f"{key}_entry_publisher"].set(current_values[key])
 
 # Edge settings
 edge_width = 50
@@ -132,7 +190,7 @@ def get_dynamic_font(text, max_width, max_height, base_font_size):
     text_width, text_height = text_surface.get_size()
 
     # Adjust font size based on width and height constraints
-    while text_width > max_width or text_height > max_height:
+    while (text_width > max_width or text_height > max_height) and font_size > 10:
         font_size -= 1
         font = pygame.font.Font(None, font_size)
         text_surface = font.render(text, True, (0, 0, 0))
@@ -155,10 +213,34 @@ def print_terminal(screen, font, terminal_lines, canvas_color, position, max_lin
         # Draw the text on top
         screen.blit(text_surface, text_rect)
 
+# Function to render buttons
+def render_button(screen, rect, text, font, color=(200, 200, 200), text_color=(0, 0, 0)):
+    pygame.draw.rect(screen, color, rect)
+    pygame.draw.rect(screen, (0, 0, 0), rect, 2)  # Border
+    text_surface = font.render(text, True, text_color)
+    text_rect = text_surface.get_rect(center=rect.center)
+    screen.blit(text_surface, text_rect)
+
 # Latch state for chime playback
 chime1_played = False
 chime2_played = False
 chime3_playing = False  # State for looping chime 3
+
+# Config Panel Variables
+config_panel_active = False
+ip_input_active = False
+ip_input_text = ""
+ip_input_rect = pygame.Rect(screen_width//2 - 150, screen_height//2 - 100, 300, 40)
+clear_terminal_button_rect = pygame.Rect(screen_width//2 - 100, screen_height//2, 200, 50)
+submit_ip_button_rect = pygame.Rect(screen_width//2 - 100, screen_height//2 + 60, 200, 50)
+close_config_button_rect = pygame.Rect(screen_width//2 + 160, screen_height//2 - 100, 30, 30)
+
+# Config Button in Bottom-Right Corner
+config_button_rect = pygame.Rect(screen_width - 110, screen_height - 60, 100, 50)
+
+# Font for buttons and input
+button_font = pygame.font.Font(None, 24)
+config_font = pygame.font.Font(None, 32)
 
 # Main loop
 running = True
@@ -171,6 +253,74 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        # Handle key presses
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_p:
+                config_panel_active = not config_panel_active
+                ip_input_active = False  # Reset input field when toggling panel
+
+            if config_panel_active and ip_input_active:
+                if event.key == pygame.K_RETURN:
+                    # Submit IP Address
+                    new_ip = ip_input_text.strip()
+                    if new_ip:
+                        ntinst.setServer(new_ip)
+                        print(f"Server IP set to {new_ip}")
+                        # Restart NetworkTables client with new IP
+                        try:
+                            ntinst.stopClient()
+                        except:
+                            pass  # If client was not running
+                        ntinst.startClient4("Pygame_Dashboard")
+                        ip_input_text = ""
+                        ip_input_active = False
+                elif event.key == pygame.K_BACKSPACE:
+                    ip_input_text = ip_input_text[:-1]
+                else:
+                    ip_input_text += event.unicode
+
+        # Handle mouse clicks
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = event.pos
+
+            if config_panel_active:
+                # Check if click is inside IP input field
+                if ip_input_rect.collidepoint(mouse_pos):
+                    ip_input_active = True
+                else:
+                    ip_input_active = False
+
+                # Check if Clear Terminal button is clicked
+                if clear_terminal_button_rect.collidepoint(mouse_pos):
+                    terminal_lines.clear()
+                    ds_terminal_text_entry_publisher.set("")  # Use publisher to clear terminal text
+                    print("Terminal cleared.")
+
+                # Check if Submit IP button is clicked
+                if submit_ip_button_rect.collidepoint(mouse_pos):
+                    new_ip = ip_input_text.strip()
+                    if new_ip:
+                        ntinst.setServer(new_ip)
+                        print(f"Server IP set to {new_ip}")
+                        # Restart NetworkTables client with new IP
+                        try:
+                            ntinst.stopClient()
+                        except:
+                            pass  # If client was not running
+                        ntinst.startClient4("Pygame_Dashboard")
+                        ip_input_text = ""
+                        ip_input_active = False
+
+                # Check if Close Config button is clicked
+                if close_config_button_rect.collidepoint(mouse_pos):
+                    config_panel_active = False
+                    ip_input_active = False
+
+            else:
+                # Check if Config button is clicked
+                if config_button_rect.collidepoint(mouse_pos):
+                    config_panel_active = True
 
     # Get canvas color from NetworkTables and clamp RGB values
     ds_r = clamp_rgb_value(ds_r_entry.get())
@@ -207,6 +357,10 @@ while running:
         terminal_lines = terminal_lines[:terminal_max_lines]  # Keep only max lines
         last_terminal_text = terminal_text
         terminal_force_triggered = True if terminal_force else False
+
+        # Reset ds_terminal_force_entry to False
+        if terminal_force:
+            ds_terminal_force_entry_publisher.set(False)
     elif not terminal_force:
         terminal_force_triggered = False  # Reset latch
 
@@ -221,6 +375,7 @@ while running:
     if chime1_trigger and not chime1_played and chime1:
         chime1.play()
         chime1_played = True
+        ds_chime_1_entry_publisher.set(False)  # Reset in NetworkTables
     elif not chime1_trigger:
         chime1_played = False  # Reset latch
 
@@ -228,6 +383,7 @@ while running:
     if chime2_trigger and not chime2_played and chime2:
         chime2.play()
         chime2_played = True
+        ds_chime_2_entry_publisher.set(False)  # Reset in NetworkTables
     elif not chime2_trigger:
         chime2_played = False  # Reset latch
 
@@ -235,6 +391,7 @@ while running:
     if chime3_trigger and chime3 and not chime3_playing:
         chime3.play(loops=-1)  # Start looping Chime 3
         chime3_playing = True
+        #ds_chime_3_entry_publisher.set(False)  # Reset in NetworkTables
     elif not chime3_trigger and chime3_playing:
         chime3.stop()  # Stop Chime 3 immediately
         chime3_playing = False
@@ -278,6 +435,41 @@ while running:
         text_surface = font.render("FMS Connected", True, (255, 255, 255))  # White text
         text_rect = text_surface.get_rect(center=(screen_width // 2, screen_height - edge_width // 2))
         screen.blit(text_surface, text_rect)
+
+    # Render Config Button if config panel is not active
+    if not config_panel_active:
+        render_button(screen, config_button_rect, "Config", button_font)
+
+    # Render Config Panel if active
+    if config_panel_active:
+        # Semi-transparent overlay
+        overlay = pygame.Surface((screen_width, screen_height))
+        overlay.set_alpha(200)  # Transparency
+        overlay.fill((50, 50, 50))  # Dark grey
+        screen.blit(overlay, (0, 0))
+
+        # Draw Config Panel Background
+        panel_rect = pygame.Rect(screen_width//2 - 200, screen_height//2 - 150, 400, 300)
+        pygame.draw.rect(screen, (100, 100, 100), panel_rect)
+        pygame.draw.rect(screen, (0, 0, 0), panel_rect, 2)  # Border
+
+        # Render IP Address Label
+        ip_label = config_font.render("RoboRIO IP Address:", True, (255, 255, 255))
+        screen.blit(ip_label, (screen_width//2 - 180, screen_height//2 - 130))
+
+        # Render IP Input Field
+        pygame.draw.rect(screen, (255, 255, 255), ip_input_rect, 2)
+        ip_text_surface = config_font.render(ip_input_text, True, (0, 0, 0))
+        screen.blit(ip_text_surface, (ip_input_rect.x + 5, ip_input_rect.y + 5))
+
+        # Render Submit IP Button
+        render_button(screen, submit_ip_button_rect, "Set IP", button_font)
+
+        # Render Clear Terminal Button
+        render_button(screen, clear_terminal_button_rect, "Clear Terminal", button_font)
+
+        # Render Close Config Button (X)
+        render_button(screen, close_config_button_rect, "X", button_font, color=(200, 0, 0), text_color=(255, 255, 255))
 
     # Update the display
     pygame.display.flip()
