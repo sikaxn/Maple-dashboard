@@ -34,12 +34,12 @@ screen_height = display_info.current_h // 2
 
 # Set up the window
 screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Pygame FRC Dashboard")  # Updated window title
+pygame.display.set_caption("Maple Dashboard")  # Updated window title
 
 # Set up NetworkTables using the publish-subscribe model
 ntinst = NetworkTableInstance.getDefault()
-ntinst.setServer("127.0.0.1")  # Initial server IP
-ntinst.startClient4("Pygame_Dashboard")  # Updated client name
+ntinst.setServer("127.0.0.1")  # Initial NT server IP
+ntinst.startClient4("Maple-dashboard")  # Updated client name
 
 # Get the telemetry table
 telemetry_table = ntinst.getTable("telemetry")
